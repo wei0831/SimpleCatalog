@@ -3,6 +3,7 @@
 
 import random
 import string
+from functools import wraps
 
 # Flask framework
 from flask import Flask, render_template
@@ -10,6 +11,7 @@ from flask import redirect, request, make_response
 from flask import session, flash
 from flask import url_for
 from flask import jsonify
+from flask.ext.seasurf import SeaSurf
 
 # SQLite
 from sqlalchemy import create_engine, asc, desc
@@ -27,6 +29,7 @@ import requests
 
 # Falsk App
 app = Flask(__name__)
+csrf = SeaSurf(app)
 app.secret_key = ''.join(
     random.choice(string.ascii_uppercase+string.digits) for x in xrange(32))
 
@@ -42,22 +45,35 @@ APPLICATION_NAME = "Simple Catalog"
 
 
 # Helper functions
-def generateRandomState():
-    session['state'] = ''.join(
-        random.choice(string.ascii_uppercase+string.digits)
-        for x in xrange(32))
-
-
 def redirect_url(default='index'):
+    '''
+    Tries to redirect to previous page
+    '''
     return request.args.get('next') or \
-           request.referrer or \
-           url_for(default)
+        request.referrer or \
+        url_for(default)
+
+
+def login_required(f):
+    '''
+    View decorator function making sure only login user can access the page
+    '''
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if session.get('gplus_id') is None:
+            return redirect(redirect_url())
+        return f(*args, **kwargs)
+    return decorated_function
 
 
 @app.route('/')
 def index():
-    generateRandomState()
+    '''
+    Render index page with categories and latest items
+    '''
+    # All Category
     categories = db.query(Category).all()
+    # Latest Items
     items = db.query(Item).order_by(desc(Item.date_updated))
     return render_template("index.html",
                            APPLICATION_NAME=APPLICATION_NAME,
@@ -67,11 +83,15 @@ def index():
 
 @app.route('/catalog.json')
 def showCatalogJson():
-    categories = db.query(Category).all()
+    '''
+    Provide JSON endpoints for all catalog itemss
+    '''
     # First, store all categories
+    categories = db.query(Category).all()
     result = {"Category": [c.serialize for c in categories]}
-    items = db.query(Item).order_by(asc(Item.category_id))
+
     # Next, push items into coresponding category
+    items = db.query(Item).order_by(asc(Item.category_id))
     for i in items:
         if 'items' not in result['Category'][i.category_id]:
             result['Category'][i.category_id]['items'] = []
@@ -82,12 +102,12 @@ def showCatalogJson():
 
 
 @app.route('/catalog/add', methods=['GET', 'POST'])
+@login_required
 def addItem():
-    generateRandomState()
-
-    if session.get('gplus_id') is None:
-        return redirect(redirect_url())
-
+    '''
+    GET: Render Add Item paage
+    POST: Add Item (title, description, category, user_id) into database
+    '''
     if request.method == 'POST':
         newitem = Item(title=request.form['title'],
                        description=request.form['description'],
@@ -104,12 +124,12 @@ def addItem():
 
 
 @app.route('/catalog/<string:category_name>/add', methods=['GET', 'POST'])
+@login_required
 def addCategoryItem(category_name):
-    generateRandomState()
-
-    if session.get('gplus_id') is None:
-        return redirect(redirect_url())
-
+    '''
+    GET: Render Add Item page with given category
+    POST: Add Item (title, description, category, user_id) into database
+    '''
     if request.method == 'POST':
         newitem = Item(title=request.form['title'],
                        description=request.form['description'],
@@ -128,12 +148,12 @@ def addCategoryItem(category_name):
 
 @app.route('/catalog/<string:category_name>/<string:item_name>/edit',
            methods=['GET', 'POST'])
+@login_required
 def editItem(category_name, item_name):
-    generateRandomState()
-
-    if session.get('gplus_id') is None:
-        return redirect(redirect_url())
-
+    '''
+    GET: Render Edit Item page with given category and item name
+    POST: Update Item (title, description, category, user_id) in database
+    '''
     # Prevent from user gussing url or incorrect url
     try:
         category = db.query(Category).filter_by(name=category_name).one()
@@ -168,12 +188,12 @@ def editItem(category_name, item_name):
 
 @app.route('/catalog/<string:category_name>/<string:item_name>/delete',
            methods=['GET', 'POST'])
+@login_required
 def deleteItem(category_name, item_name):
-    generateRandomState()
-
-    if session.get('gplus_id') is None:
-        return redirect(redirect_url())
-
+    '''
+    GET: Render Delete Item page with given category and item name
+    POST: Delete Item (title, description, category, user_id) in database
+    '''
     # Prevent from user gussing url or incorrect url
     try:
         category = db.query(Category).filter_by(name=category_name).one()
@@ -206,8 +226,9 @@ def deleteItem(category_name, item_name):
 
 @app.route('/catalog/<string:category_name>/<string:item_name>')
 def showItem(category_name, item_name):
-    generateRandomState()
-
+    '''
+    GET: Render Show Item page with given category and item name
+    '''
     # Prevent from user gussing url or incorrect url
     try:
         category = db.query(Category).filter_by(name=category_name).one()
@@ -238,10 +259,9 @@ def showItem(category_name, item_name):
 
 @app.route('/gconnect', methods=['POST'])
 def gconnect():
-    if request.args.get('state') != session['state']:
-        response = make_response(json.dumps('Invalid State'), 401)
-        response.headers['Content-Type'] = 'application/json'
-        return response
+    '''
+    POST: Talk to google sever and get user info
+    '''
     code = request.data
 
     try:
@@ -323,6 +343,9 @@ def gconnect():
 
 @app.route("/gdisconnect")
 def gdisconnect():
+    '''
+    POST: Talk to google sever and disconnect user
+    '''
     credentials = session.get('credentials')
     if credentials is None:
         return None

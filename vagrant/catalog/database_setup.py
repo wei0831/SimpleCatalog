@@ -8,9 +8,6 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
 Base = declarative_base()
-engine = create_engine('sqlite:///catalog.db')
-Base.metadata.create_all(engine)
-
 
 class User(Base):
     __tablename__ = 'users'
@@ -46,7 +43,7 @@ class Item(Base):
     __tablename__ = 'items'
 
     id = Column(Integer, primary_key=True)
-    title = Column(String(250), nullable=False)
+    title = Column(String(250), nullable=False, unique=True)
     description = Column(String(), nullable=False)
     category_id = Column(Integer, ForeignKey('categories.id'), nullable=False)
     category = relationship(Category)
@@ -63,3 +60,6 @@ class Item(Base):
             "title": self.title,
             "description": self.description
         }
+
+engine = create_engine('sqlite:///catalog.db')
+Base.metadata.create_all(engine)

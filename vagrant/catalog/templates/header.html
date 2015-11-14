@@ -23,12 +23,11 @@ Author: Jack Chang (wei0831@gmail.com)
         </li>
         {% else:%}
         <li>
-          <div id="signinButton">
-            <span class="g-signin" data-accesstype="offline" data-approvalprompt="force" data-callback="signInCallback" data-clientid="60852957499-i57dluqr4hin862lptckth7csjdgqn3h.apps.googleusercontent.com" data-cookiepolicy="single_host_origin" data-redirecturi="postmessage" data-scope="openid email"></span>
+          <div id="signinButton" data-csrftoken="{{csrf_token()}}">
+            <span class="g-signin" data-accesstype="offline" data-approvalprompt="force" data-callback="signInCallback" data-clientid="60852957499-i57dluqr4hin862lptckth7csjdgqn3h.apps.googleusercontent.com" data-cookiepolicy="single_host_origin" data-redirecturi="postmessage" data-scope="openid email" ></span>
           </div>
         </li>
         {% endif %}
-
       </ul>
   </div>
 </nav>
@@ -36,9 +35,17 @@ Author: Jack Chang (wei0831@gmail.com)
 <script type="text/javascript">
   function signInCallback(authResult) {
     if (authResult['code']) {
+      $.ajaxSetup({
+            crossDomain: false,
+            beforeSend: function (xhr, settings) {
+                if (!(/^(GET|HEAD|OPTIONS|TRACE)$/.test(settings.type))) {
+                    xhr.setRequestHeader('X-CSRFToken', $('#signinButton').data('csrftoken'));
+                }
+            }
+        });
       $.ajax({
         type: 'POST',
-        url: '/gconnect?state={{session.state}}',
+        url: '/gconnect',
         processData: false,
         contentType: 'applciation/octet-stream; charset=utf-8',
         data: authResult['code'],

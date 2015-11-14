@@ -27,6 +27,7 @@ Author: Jack Chang (wei0831@gmail.com)
               {% endfor %}
             </select>
           </div>
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
           <input type="submit" class="form-control btn btn-primary" value="Add Item">
         </form>
       </div>
