@@ -25,14 +25,17 @@ import httplib2
 import json
 import requests
 
+# Falsk App
 app = Flask(__name__)
 app.secret_key = ''.join(
     random.choice(string.ascii_uppercase+string.digits) for x in xrange(32))
 
+# Dabasbase Session
 engine = create_engine('sqlite:///catalog.db')
 Base.metadata.bind = engine
 db = sessionmaker(bind=engine)()
 
+# Oauth2
 CLIENT_ID = json.loads(
     open('client_secrets.json', 'r').read())['web']['client_id']
 APPLICATION_NAME = "Simple Catalog"
