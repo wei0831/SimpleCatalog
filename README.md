@@ -5,6 +5,7 @@ Simple catalog demo using Flask and SQLAlchemy
 - Python 2.7
 - [Flask](http://flask.pocoo.org/)
 - [Flask-SeaSurf](https://flask-seasurf.readthedocs.org/en/latest/)
+- [dicttoxml](https://github.com/quandyfactory/dicttoxml)
 - [SQLAlchemy](http://www.sqlalchemy.org/)
 - [Oauth2client](https://github.com/google/oauth2client)
 - [Vagrant](https://www.vagrantup.com/)
