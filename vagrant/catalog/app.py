@@ -27,6 +27,9 @@ import httplib2
 import json
 import requests
 
+# XNL
+from dicttoxml import dicttoxml
+
 # Falsk App
 app = Flask(__name__)
 csrf = SeaSurf(app)
@@ -98,7 +101,31 @@ def showCatalogJson():
 
         result['Category'][i.category_id]['items'].append(i.serialize)
 
-    return jsonify(result)
+    response = make_response(jsonify(result), 200)
+    response.headers['Content-Type'] = 'application/json'
+    return response
+
+
+@app.route('/catalog.xml')
+def showCatalogXML():
+    '''
+    Provide XML endpoints for all catalog itemss
+    '''
+    # First, store all categories
+    categories = db.query(Category).all()
+    result = {"Category": [c.serialize for c in categories]}
+
+    # Next, push items into coresponding category
+    items = db.query(Item).order_by(asc(Item.category_id))
+    for i in items:
+        if 'items' not in result['Category'][i.category_id]:
+            result['Category'][i.category_id]['items'] = []
+
+        result['Category'][i.category_id]['items'].append(i.serialize)
+
+    response = make_response(dicttoxml(result), 200)
+    response.headers['Content-Type'] = 'application/xml'
+    return response
 
 
 @app.route('/catalog/add', methods=['GET', 'POST'])
@@ -264,6 +291,7 @@ def gconnect():
     '''
     code = request.data
 
+    # Check authorization code
     try:
         oauth_flow = flow_from_clientsecrets('client_secrets.json', scope='')
         oauth_flow.redirect_uri = "postmessage"
@@ -350,6 +378,7 @@ def gdisconnect():
     if credentials is None:
         return None
 
+    # Check if access_token is valid
     access_token = json.loads(credentials)['access_token']
     url = 'https://accounts.google.com/o/oauth2/revoke?token=%s' % access_token
     h = httplib2.Http()
