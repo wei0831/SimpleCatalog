@@ -19,7 +19,9 @@ Author: Jack Chang (wei0831@gmail.com)
     </div>
 
     <div class="col-md-10 col-sm-9 col-xs-6">
-      <a href ="{{url_for('addItem')}}">Add Item</a>
+      {% if session['user_id']: %}
+        <a href ="{{url_for('addCategoryItem', category_name=current_category)}}">Add Item</a>
+      {% endif %}
       <h3>{{current_category}} Items ({{ items.count() }} items)</h3>
       <ul class="list-unstyled">
         {% for item in items %}

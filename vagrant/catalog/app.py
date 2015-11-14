@@ -82,6 +82,9 @@ def showCatalogJson():
 def addItem():
     generateRandomState()
 
+    if session.get('gplus_id') is None:
+        return redirect(redirect_url())
+
     if request.method == 'POST':
         newitem = Item(title=request.form['title'],
                        description=request.form['description'],
@@ -97,10 +100,36 @@ def addItem():
                                categories=categories)
 
 
+@app.route('/catalog/<string:category_name>/add', methods=['GET', 'POST'])
+def addCategoryItem(category_name):
+    generateRandomState()
+
+    if session.get('gplus_id') is None:
+        return redirect(redirect_url())
+
+    if request.method == 'POST':
+        newitem = Item(title=request.form['title'],
+                       description=request.form['description'],
+                       category_id=request.form['category_id'],
+                       user_id=session['user_id'])
+        db.add(newitem)
+        db.commit()
+        return redirect(url_for('index'))
+    else:
+        categories = db.query(Category).all()
+        return render_template("additem.html",
+                               APPLICATION_NAME=APPLICATION_NAME,
+                               categories=categories,
+                               current_category=category_name)
+
+
 @app.route('/catalog/<string:category_name>/<string:item_name>/edit',
            methods=['GET', 'POST'])
 def editItem(category_name, item_name):
     generateRandomState()
+
+    if session.get('gplus_id') is None:
+        return redirect(redirect_url())
 
     # Prevent from user gussing url or incorrect url
     try:
@@ -138,6 +167,9 @@ def editItem(category_name, item_name):
            methods=['GET', 'POST'])
 def deleteItem(category_name, item_name):
     generateRandomState()
+
+    if session.get('gplus_id') is None:
+        return redirect(redirect_url())
 
     # Prevent from user gussing url or incorrect url
     try:
