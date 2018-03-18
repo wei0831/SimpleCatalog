@@ -44,10 +44,5 @@ vagrant suspend
 ```
 
 ## Useful Links
-How do I destroy a VM when I deleted the .vagrant file?
+#### How do I destroy a VM when I deleted the .vagrant file?  
 http://stackoverflow.com/questions/15408969/how-do-i-destroy-a-vm-when-i-deleted-the-vagrant-file  
-
-## Author
-**[Jack Chang]**
-
-[Jack Chang]: https://wei0831.net
